@@ -3,6 +3,10 @@
     <meta charset="UTF-8">
     <title>Compact Conflict</title>
 	<style type="text/css">
+		html {
+			height: 100%;
+			margin: 0;
+		}
 		body {
 			background: #000;
 			height: 100%;
@@ -10,6 +14,9 @@
 			font-family: sans-serif;
             overflow: hidden;
             line-height: 1.14;
+            display: flex;
+            align-items: center;
+            justify-content: center;
 		}
 		svg {
 			width: 100%;
@@ -17,13 +24,13 @@
 		}
 		#c {
 			position: relative;
-			margin: auto;
+			flex: none;
 		}
 		#o,#m,#u {
 			position: absolute;
 		}
 		#o {
-			/* left: 1%; right: 78.2%; */
+			left: 1%; right: 78.2%;
 			top: 13.5%; bottom: 13.5%;
 			color: white;
 			border: 1px solid #333;
@@ -31,7 +38,7 @@
             font-size: 110%;
 		}
 		#m {
-			right: 0; left: 20%; top: 0; bottom: 0;
+			right: 0; left: 22%; top: 0; bottom: 0;
 		}
 
 		/* Board elements */

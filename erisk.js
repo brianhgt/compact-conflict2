@@ -402,12 +402,17 @@ function transformPoints(points, xm, ym, xd, yd) {
 	});
 }
 
-// 3d projection for the map
+// 45-degree isometric projection for the map
 function projectPoint(p) {
-	var x = p[0] / mapWidth, y = p[1] / mapHeight;
-	var alpha = x * .4 + .6;
-	y = y * alpha + 0.5 * (1-alpha);
-	return [x*100, y*100];
+    var angle = Math.PI / 4;
+    var isoX = (p[0] - p[1]) * Math.cos(angle);
+    var isoY = (p[0] + p[1]) * Math.sin(angle);
+    var scale = 2.0 * 100 / (Math.SQRT2 * (mapWidth + mapHeight));
+
+    return [
+        50 + (isoX - (mapWidth - mapHeight) * Math.cos(angle) / 2) * scale,
+        50 + (isoY - (mapWidth + mapHeight) * Math.sin(angle) / 2) * scale
+    ];
 }
 
 // Generate a SVG gradient stop tag.
@@ -472,7 +477,7 @@ function showMap(container, gameState) {
 
     // replace the map container contents with the new map
     container.innerHTML = elem('svg', {
-        viewbox: '0 0 100 100',
+        viewBox: '0 0 100 100',
         preserveAspectRatio: 'none'
     }, defs + ocean + shadows + bottoms + tops + highlighters);
 
@@ -889,10 +894,10 @@ function updateMapDisplay(gameState) {
         var center = region.c;
         var totalSoldiers = soldierCount(gameState, region);
 
-        var columnWidth = min([totalSoldiers,4]);
-        var rowHeight = min([2 / ceil(totalSoldiers / 4), 1]);
+        var columnWidth = min([totalSoldiers,5]);
+        var rowHeight = min([2 / ceil(totalSoldiers / 5), 1]);
 
-        var x = index % 4, y = floor(index / 4);
+        var x = index % 5, y = floor(index / 5);
         var xOffset = (-0.6 * columnWidth + x * 1.2);
         var yOffset = y * rowHeight + (gameState.t[region.i] ? 1.5 : 0);
         var xPosition = center[0] + xOffset - yOffset * 0.2;
@@ -923,7 +928,7 @@ function updateMapDisplay(gameState) {
 
             // should we have a tooltip?
             var count = soldierCount(gameState, region);
-            if (count > 8) {
+            if (count > 40) {
                 var selected = (gameState.d && (gameState.d.s == region)) ? gameState.d.c : 0;
                 selected += sum(gameState.s[regionIndex], function(soldier) {
                     return soldier.a ? 1 : 0;
