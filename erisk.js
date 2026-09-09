@@ -175,6 +175,7 @@ function elem(tag,attrs,contents) {
 // Appends new HTML to a container with the designated ID, and returns the resulting DOM node.
 function append(containerId, newHTML) {
     var container = $(containerId);
+    if (!container) return; // Ensure the container exists
     container.insertAdjacentHTML('beforeend', newHTML);
     return container.lastChild;
 }
@@ -517,9 +518,9 @@ function showMap(container, gameState) {
 
             // create the temple <div>s
             var templeHTML = div({
-                c: 'o',
+                c: 'temple',
                 s: style
-            }, div({c: 'i'}, div({c: 'i'}, div({c: 'i'}, div({c: 'i'})))));
+            }, div({c: 'temple-level'}, div({c: 'temple-level'}, div({c: 'temple-level'}, div({c: 'temple-level'})))));
             temple.e = append('m', templeHTML);
 
             // retrieve elements and bind callbacks
@@ -531,23 +532,23 @@ function showMap(container, gameState) {
 // Prepares the whole sidebar on the left for gameplay use.
 function prepareIngameUI(gameState) {
     // turn counter
-    var html = div({i: 'tc', c: 'sc'});
+    var html = div({i: 'tc', c: 'panel'});
 
     // player box area
-    html += div({i: 'pd', c: 'sc un'}, map(gameState.p, function(player) {
+    html += div({i: 'pd', c: 'panel panel-padded'}, map(gameState.p, function(player) {
         var pid = player.i;
         return div({
             i: 'pl' + pid,
-            c: 'pl',
+            c: 'player-panel',
             style: 'background: ' + player.d
         }, player.n +
-            div({c: 'ad', i: 'pr' + pid}) +
-            div({c: 'ad', i: 'pc' + pid})
+            div({c: 'player-stat', i: 'pr' + pid}) +
+            div({c: 'player-stat', i: 'pc' + pid})
         );
     }).join(''));
 
     // info box
-    html += div({c: 'sc un ds', i: 'in'});
+    html += div({c: 'panel panel-padded description', i: 'in'});
 
     // set it all
     $('d').innerHTML = html;
@@ -809,7 +810,7 @@ function updateMapDisplay(gameState) {
     }
 
     function updateTooltips() {
-        map(doc.querySelectorAll('.ttp'), $('m').removeChild.bind($('m')));
+        map(doc.querySelectorAll('.tooltip'), $('m').removeChild.bind($('m')));
         if (activePlayer(gameState).u != uiPickMove) return;
 
         // "how to move" tooltips
@@ -846,7 +847,7 @@ function updateMapDisplay(gameState) {
         var left = region.c[0] - (width+1) * 0.5, bottom = 102 - region.c[1];
         var styles = 'bottom: ' + bottom + '%; left: ' + left + '%; width: ' + width + '%';
 
-        append('m', div({c: 'tt ttp', s: styles}, text));
+        append('m', div({c: 'tooltip tooltip-target', s: styles}, text));
     }
 
     function updateTempleDisplay(temple) {
@@ -868,7 +869,7 @@ function updateMapDisplay(gameState) {
 
         // highlight?
         var selected = gameState.d && gameState.d.w == temple;
-        toggleClass(temple.e, 'l', selected);
+        toggleClass(temple.e, 'selected', selected);
     }
 
     function updateSoldierDisplay(region, soldier, index) {
@@ -878,7 +879,7 @@ function updateMapDisplay(gameState) {
         // find or create a <div> for showing the soldier
         var domElement = soldierDivsById[soldier.i];
         if (!domElement) {
-            var html = div({c: 's', s: 'display: none'});
+            var html = div({c: 'soldier', s: 'display: none'});
 
             domElement = soldierDivsById[soldier.i] = append('m', html);
             onClickOrTap(domElement, invokeUICallback.bind(0, soldier, 's'));
@@ -910,7 +911,7 @@ function updateMapDisplay(gameState) {
 
         // selected?
         var decisionState = gameState.d || {};
-        toggleClass(domElement, 'l', (decisionState.s == region) && (index < decisionState.c));
+        toggleClass(domElement, 'selected', (decisionState.s == region) && (index < decisionState.c));
     }
 
     function updateSoldierTooltips() {
@@ -933,7 +934,7 @@ function updateMapDisplay(gameState) {
                 if (!tooltip) {
                     var tooltipHTML = div({
                         i: tooltipId,
-                        c: 'tt stt',
+                        c: 'tooltip soldier-count-tooltip',
                         s: "left:" + (region.c[0] - 1.5) + '%;top:' + (region.c[1] + 1.2) + '%'
                     }, '');
                     tooltip = append('m', tooltipHTML);
@@ -958,7 +959,7 @@ function updateMapDisplay(gameState) {
             x -= floater.w/2 + 0.5; y -= 4;
 
             var styles = "left: " + x + "%;top:" + y + "%;color:" + floater.c + ";width:" + floater.w + "%";
-            var floatingNode = append('m', div({c: 'tt', s: styles}, floater.t));
+            var floatingNode = append('m', div({c: 'tooltip', s: styles}, floater.t));
             setTransform(floatingNode, "translate3d(0,0,0)");
             floatAway(floatingNode, 0, -3);
         });
@@ -977,7 +978,7 @@ function updateIngameUI(gameState) {
     // turn counter/building name
     if (buildingMode) {
         var info = templeInfo(gameState, decisionState.w);
-        $('tc').innerHTML = div({}, info.n) + div({c: 'ds'}, info.d);
+        $('tc').innerHTML = div({}, info.n) + div({c: 'description'}, info.d);
     } else {
         $('tc').innerHTML = 'Turn <b>' + gameState.m.t + '</b>' + ((gameSetup.tc != UNLIMITED_TURNS) ? ' / ' + gameSetup.tc : '');
     }
@@ -1043,7 +1044,7 @@ function updateButtons(buttons) {
 
         var buttonContents = div({}, button.t);
         if (button.d)
-            buttonContents += div({c: 'ds'}, button.d);
+            buttonContents += div({c: 'description'}, button.d);
 
         var buttonHTML = elem('a', {href: '#', c: button.o ? 'off' : ''}, buttonContents);
         var buttonNode = append('u', buttonHTML);
@@ -1073,7 +1074,7 @@ function showBanner(background, text, delay) {
     delay = delay || 1;
     oneAtATime(delay, function() {
         // create a new banner div
-        var banner = append('c', div({c: 'bn'}, text)),
+        var banner = append('c', div({c: 'game-banner'}, text)),
             styles = banner.style;
 
         styles.background = background;
@@ -1093,7 +1094,7 @@ function showBanner(background, text, delay) {
 
 function spawnParticle(x, y, vx, vy, color) {
     var styleString = "opacity:1;left: " + x + "%;top: " + y + "%;box-shadow: 0 0 1px 1px " + color;
-    var particle = append('m', div({c: 'pr', s: styleString}, ''));
+    var particle = append('m', div({c: 'particle', s: styleString}, ''));
     floatAway(particle, vx, vy);
 }
 
@@ -2136,16 +2137,16 @@ function storeSetupInLocalStorage() {
 
 function prepareSetupUI() {
     // player box area
-    var html = div({c: 'sc ds'}, "Player setup");
+    var html = div({c: 'panel description'}, "Player setup");
     var playerBoxes = map(PLAYER_TEMPLATES, function(player) {
         var pid = player.i;
         return buttonPanel(player.n, "sb" + player.i, ["AI", "Human", "Off"], {
             i: 'pl' + pid,
-            c: 'pl',
+            c: 'player-panel',
             s: 'background: ' + player.d
         });
     }).join("");
-    html += div({i: 'pd', c: 'sc un'}, playerBoxes);
+    html += div({i: 'pd', c: 'panel panel-padded'}, playerBoxes);
     html += buttonPanel("AI", "ai", ["Evil", "Mean", "Rude", "Nice"]);
     html += buttonPanel("Turns", "tc", ["Endless", "15", "12", "9"]);
 
@@ -2167,9 +2168,9 @@ function prepareSetupUI() {
     function buttonPanel(title, buttonIdPrefix, buttonLabels, additionalProperties) {
         var buttons = map(buttonLabels, function(label, index) {
             var id = buttonIdPrefix + (buttonLabels.length-1-index);
-            return elem('a', {i: id, c: 'rt', href: '#', s: 'font-size: 90%'}, label);
+            return elem('a', {i: id, c: 'action-button', href: '#', s: 'font-size: 90%'}, label);
         }).join("");
-        var properties = {c: 'sc ds', s: 'padding-right: 0.5em'};
+        var properties = {c: 'panel description', s: 'padding-right: 0.5em'};
         forEachProperty(additionalProperties, function(value, name) {
             properties[name] = value;
         });
@@ -2241,14 +2242,14 @@ function runSetupScreen() {
         // update player buttons
         map(gameSetup.p, function(controller, playerIndex) {
            map(range(0,3), function(buttonIndex) {
-               toggleClass('sb' + playerIndex + buttonIndex, 'sl', (controller == buttonIndex));
+               toggleClass('sb' + playerIndex + buttonIndex, 'selected', (controller == buttonIndex));
            })
         });
 
         // update AI and turn count buttons
         map(range(0,4), function(index) {
-            toggleClass('ai' + index, 'sl', index == gameSetup.l);
-            toggleClass('tc' + index, 'sl', TURN_COUNTS[index] == gameSetup.tc);
+            toggleClass('ai' + index, 'selected', index == gameSetup.l);
+            toggleClass('tc' + index, 'selected', TURN_COUNTS[index] == gameSetup.tc);
         });
     }
 
