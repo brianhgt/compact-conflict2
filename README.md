@@ -3,7 +3,7 @@ Compact Conflict
 
 A minuscule risk-based strategy game created for [JS13k 2014](http://js13kgames.com/). Less than 13kB minified and zipped.
 
-You can **[play it right here](http://wasyl.eu/games/compact-conflict/play.html)**.
+You can **[Compact Conflict 2](https://brianhgt.github.io/compact-conflict2/)** or the **[original](http://wasyl.eu/games/compact-conflict/play.html)**.
 
 #### The code
 
