@@ -12,6 +12,15 @@ window.onload = function() {
         setupAudio();
         runSetupScreen();
         setupTitleScreen();
+
+        // resume an interrupted game, if there is one
+        var savedGame = loadGame();
+        if (savedGame) {
+            prepareIngameUI(savedGame);
+            showMap($('m'), savedGame);
+            updateDisplay(savedGame);
+            playOneMove(savedGame);
+        }
     }, 500);
 };
 

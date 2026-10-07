@@ -273,9 +273,115 @@ function copyState(state, simulatingPlayer) {
 	};
 }
 
+// ==========================================================
+// Saving and restoring the game, so it survives a browser restart.
+// ==========================================================
+
+var SAVE_KEY = "g", SAVE_VERSION = 1;
+
+function serializeState(state) {
+    var data = {
+        v: SAVE_VERSION, tc: gameSetup.tc, al: gameSetup.l,
+        r: map(state.r, function(region) {
+            return {p: region.p, n: map(region.n, function(n) { return n.i; })};
+        }),
+        p: map(state.p, function(player) {
+            var template = 0;
+            map(PLAYER_TEMPLATES, function(t, index) { if (t.n == player.n) template = index; });
+            return {
+                t: template,
+                h: player.u == uiPickMove,
+                p: player.p && {s: player.p.s, u: map(player.p.u, function(u) { return UPGRADES.indexOf(u); })}
+            };
+        }),
+        o: {}, t: {}, s: {},
+        c: state.c, l: state.l,
+        m: deepCopy(state.m, 1)
+    };
+    data.m.z = map(state.m.z || [], function(region) { return region.i; });
+    forEachProperty(state.o, function(player, regionIndex) { data.o[regionIndex] = player.i; });
+    forEachProperty(state.t, function(temple, regionIndex) {
+        data.t[regionIndex] = {u: temple.u ? UPGRADES.indexOf(temple.u) : -1, l: temple.l};
+    });
+    forEachProperty(state.s, function(soldiers, regionIndex) {
+        data.s[regionIndex] = map(soldiers, function(soldier) { return soldier.i; });
+    });
+    return data;
+}
+
+function deserializeState(data) {
+    var regions = map(data.r, function(r, index) { return {i: index, p: r.p, d: []}; });
+    map(regions, function(region, index) {
+        region.n = map(data.r[index].n, function(n) { return regions[n]; });
+    });
+
+    var players = map(data.p, function(pd, index) {
+        var player = deepCopy(PLAYER_TEMPLATES[pd.t], 1);
+        player.i = index;
+        player.u = pd.h ? uiPickMove : aiPickMove;
+        if (pd.p)
+            player.p = {s: pd.p.s, u: map(pd.p.u, function(u) { return UPGRADES[u]; })};
+        return player;
+    });
+
+    var state = {p: players, r: regions, o: {}, t: {}, s: {}, c: data.c, l: data.l, m: data.m};
+    state.m.z = map(data.m.z, function(regionIndex) { return regions[regionIndex]; });
+    if (!state.m.z.length)
+        delete state.m.z;
+
+    forEachProperty(data.o, function(playerIndex, regionIndex) { state.o[regionIndex] = players[playerIndex]; });
+    forEachProperty(data.t, function(t, regionIndex) {
+        var temple = {r: regions[regionIndex], i: parseInt(regionIndex)};
+        if (t.u >= 0) {
+            temple.u = UPGRADES[t.u];
+            temple.l = t.l;
+        }
+        state.t[regionIndex] = temple;
+    });
+    var highestSoldierId = 0;
+    forEachProperty(data.s, function(ids, regionIndex) {
+        state.s[regionIndex] = map(ids, function(id) {
+            highestSoldierId = max([highestSoldierId, id]);
+            return {i: id};
+        });
+    });
+    soldierCounter = highestSoldierId + 1;
+
+    return state;
+}
+
+function saveGame(state) {
+    try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(serializeState(state)));
+    } catch (e) {}
+}
+
+function clearSavedGame() {
+    try {
+        localStorage.removeItem(SAVE_KEY);
+    } catch (e) {}
+}
+
+// Returns the saved game state (and restores the matching settings), or null if there is none.
+function loadGame() {
+    try {
+        var data = JSON.parse(localStorage.getItem(SAVE_KEY));
+        if (!data || data.v != SAVE_VERSION)
+            return null;
+        var state = deserializeState(data);
+        gameSetup.tc = data.tc;
+        gameSetup.l = data.al;
+        return state;
+    } catch (e) {
+        clearSavedGame();
+        return null;
+    }
+}
+
 function playOneMove(state) {
     // we're playing the game now
     appState = APP_INGAME;
+    saveGame(state);
 
     // oneAtATime is used to ensure that all animations from previous moves complete before a new one is played
     oneAtATime(150, function() {
@@ -292,6 +398,7 @@ function playOneMove(state) {
             // did the game end?
             if (newState.e) {
                 // yes, the game has ended
+                clearSavedGame();
                 oneAtATime(150, updateDisplay.bind(0, newState));
                 showEndGame(newState);
                 return;

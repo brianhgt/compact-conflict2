@@ -798,6 +798,7 @@ function setupTitleScreen() {
     onClickOrTap($('snd'), toggleSound);
     onClickOrTap($('und'), invokeUICallback.bind(0, 0, 'un'));
     onClickOrTap($('end'), function() {
+        clearSavedGame();
         uiCallbacks = {};
         updateDisplay(displayedState);
         runSetupScreen();
