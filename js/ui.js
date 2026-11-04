@@ -626,7 +626,8 @@ var defaultSetup = {
     l: AI_NICE,
     s: true,
     tc: 12,
-    tt: {}
+    tt: {},
+    version: 2.1
 };
 var gameSetup = getSetupFromStorage();
 var appState = 0;
@@ -637,6 +638,13 @@ function getSetupFromStorage() {
         var stored = localStorage.getItem("s");
         if (stored) {
             stored = JSON.parse(stored);
+            var version = stored["version"];
+            if (version == null || version <= defaultSetup.version) {
+                //TODO throw error if stored version is earlier than default
+                error("Stored version is earlier than default version.");
+            }
+            
+            //parse each property and fill in defaults if missing
             forEachProperty(defaultSetup, function (value, name) {
                 if (stored[name] === undefined)
                     stored[name] = value;
