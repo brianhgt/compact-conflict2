@@ -371,6 +371,7 @@ function loadGame() {
         var state = deserializeState(data);
         gameSetup.tc = data.tc;
         gameSetup.l = data.al;
+        setTitleScreenVisibility(false);
         return state;
     } catch (e) {
         clearSavedGame();

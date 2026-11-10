@@ -641,7 +641,7 @@ function getSetupFromStorage() {
             var version = stored["version"];
             if (version == null || version <= defaultSetup.version) {
                 //TODO throw error if stored version is earlier than default
-                error("Stored version is earlier than default version.");
+                console.log("Stored version is earlier than default version.");
             }
             
             //parse each property and fill in defaults if missing
@@ -733,10 +733,19 @@ function runSetupScreen() {
     // callback for player setup buttons
     uiCallbacks.sb = function(event) {
         // set the controller type for the player
+        var previous = gameSetup.p[event.p];
         gameSetup.p[event.p] = event.b;
         updateConfigButtons();
         updateBottomButtons();
-        regenerateMap();
+
+        // switching between Human and AI doesn't change the map, only who controls the player
+        var swappedController = game && previous != PLAYER_OFF && event.b != PLAYER_OFF;
+        if (swappedController && setupValid()) {
+            if (previous != event.b)
+                changeController(PLAYER_TEMPLATES[event.p].n, event.b);
+        } else {
+            regenerateMap();
+        }
     };
     // callback for config buttons
     uiCallbacks.ai = function(aiLevel) {
@@ -779,6 +788,18 @@ function runSetupScreen() {
             toggleClass('ai' + index, 'selected', index == gameSetup.l);
             toggleClass('tc' + index, 'selected', TURN_COUNTS[index] == gameSetup.tc);
         });
+    }
+
+    // Switches an existing player of the generated game between human and AI control.
+    function changeController(playerName, controller) {
+        var player = game.p.filter(function(p) { return p.n == playerName; })[0];
+        if (controller == PLAYER_HUMAN) {
+            player.u = uiPickMove;
+            delete player.p;
+        } else {
+            player.u = aiPickMove;
+            player.p = deepCopy(AI_PERSONALITIES[rint(0, AI_PERSONALITIES.length)], 2);
+        }
     }
 
     function regenerateMap() {
